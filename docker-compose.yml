@@ -1,0 +1,155 @@
+services:
+  # Room Service
+  room_db:
+    image: postgres:14
+    container_name: room_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: room_service
+    volumes:
+      - room_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - hotelease_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  room_service:
+    build: ./room_service
+    container_name: room_service
+    depends_on:
+      room_db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@room_db:5432/room_service
+    ports:
+      - "8001:8000"
+    networks:
+      - hotelease_network
+    restart: on-failure
+
+  # Reservation Service
+  reservation_db:
+    image: postgres:14
+    container_name: reservation_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: reservation_service
+    volumes:
+      - reservation_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - hotelease_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  reservation_service:
+    build: ./reservation_service
+    container_name: reservation_service
+    depends_on:
+      reservation_db:
+        condition: service_healthy
+      room_service:
+        condition: service_started
+      guest_service:
+        condition: service_started
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@reservation_db:5432/reservation_service
+      - ROOM_SERVICE_URL=http://room_service:8000/graphql
+      - GUEST_SERVICE_URL=http://guest_service:8000/graphql
+    ports:
+      - "8002:8000"
+    networks:
+      - hotelease_network
+    restart: on-failure
+
+  # Guest Service
+  guest_db:
+    image: postgres:14
+    container_name: guest_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: guest_service
+    volumes:
+      - guest_data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    networks:
+      - hotelease_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  guest_service:
+    build: ./guest_service
+    container_name: guest_service
+    depends_on:
+      guest_db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@guest_db:5432/guest_service
+    ports:
+      - "8003:8000"
+    networks:
+      - hotelease_network
+    restart: on-failure
+
+  # Billing Service
+  billing_db:
+    image: postgres:14
+    container_name: billing_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: billing_service
+    volumes:
+      - billing_data:/var/lib/postgresql/data
+    ports:
+      - "5435:5432"
+    networks:
+      - hotelease_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  billing_service:
+    build: ./billing_service
+    container_name: billing_service
+    depends_on:
+      billing_db:
+        condition: service_healthy
+      reservation_service:
+        condition: service_started
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@billing_db:5432/billing_service
+      - RESERVATION_SERVICE_URL=http://reservation_service:8000/graphql
+    ports:
+      - "8004:8000"
+    networks:
+      - hotelease_network
+    restart: on-failure
+
+networks:
+  hotelease_network:
+    driver: bridge
+
+volumes:
+  room_data:
+  reservation_data:
+  guest_data:
+  billing_data:
