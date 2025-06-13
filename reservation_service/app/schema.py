@@ -136,37 +136,7 @@ class Query:
         if not reservation:
             return None
         
-        result = reservation_to_graphql(reservation)
-        
-        # Fetch related guest and room data
-        room_client = RoomServiceClient()
-        guest_client = GuestServiceClient()
-        
-        try:
-            room_data = await room_client.get_room(reservation.room_id)
-            if room_data:
-                result.room = RoomType(
-                    id=room_data["id"],
-                    room_number=room_data["roomNumber"],  # Changed to camelCase
-                    room_type=room_data["roomType"],        # Changed to camelCase
-                    price_per_night=room_data["pricePerNight"],# Changed to camelCase
-                    status=room_data["status"]
-                )
-                
-            guest_data = await guest_client.get_guest(reservation.guest_id)
-            if guest_data:
-                result.guest = GuestType(
-                    id=guest_data["id"],
-                    full_name=guest_data.get("fullName"),  # Changed to get("fullName")
-                    email=guest_data.get("email"),        # Using .get for safety
-                    phone=guest_data.get("phone"),        # Using .get for safety
-                    address=guest_data.get("address")     # Using .get for safety
-                )
-        finally:
-            await room_client.close()
-            await guest_client.close()
-            
-        return result
+        return reservation_to_graphql(reservation)
 
     @strawberry.field
     def reservations(self, info) -> List[ReservationType]:
