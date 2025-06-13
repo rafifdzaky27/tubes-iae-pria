@@ -54,40 +54,74 @@ class GuestType:
     address: str
     
     @strawberry.field
-    def loyalty_info(self) -> LoyaltyInfoType:
+    async def loyalty_info(self) -> Optional[LoyaltyInfoType]:
         """Fetch loyalty information for this guest from the hotelmate loyalty service"""
-        logging.info(f"Fetching loyalty info for guest {self.id}")
-        
-        # Create sample rewards for testing
-        sample_rewards = [
-            RewardType(
-                rewardId=1,
-                name="Free Breakfast",
-                pointsRequired=50,
-                description="Enjoy a complimentary breakfast during your stay",
-                available=True,
-                tierRestriction="STANDARD",
-                createdAt="2025-01-01T00:00:00Z",
-                updatedAt="2025-01-01T00:00:00Z"
-            ),
-            RewardType(
-                rewardId=2,
-                name="Room Upgrade",
-                pointsRequired=100,
-                description="Upgrade to a better room category",
-                available=True,
-                tierRestriction="STANDARD",
-                createdAt="2025-01-01T00:00:00Z",
-                updatedAt="2025-01-01T00:00:00Z"
-            )
-        ]
-        
-        # Return a placeholder loyalty info object with sample rewards
-        return LoyaltyInfoType(
-            loyaltyPoints=100,
-            tier="STANDARD",
-            availableRewards=sample_rewards
-        )
+        logging.info(f"Fetching loyalty info for guest {self.id} from loyalty service.")
+        loyalty_service_url = os.getenv("LOYALTY_SERVICE_URL")
+        if not loyalty_service_url:
+            logging.error("LOYALTY_SERVICE_URL not configured.")
+            return None
+
+        transport = AIOHTTPTransport(url=loyalty_service_url)
+        client = Client(transport=transport, fetch_schema_from_transport=False)
+
+        query_string = gql("""
+            query GetLoyaltyInfoByGuestId($guestId: Int!) {
+                loyaltyInfoByGuestId(guestId: $guestId) {
+                    loyaltyPoints
+                    tier
+                    availableRewards {
+                        rewardId
+                        name
+                        pointsRequired
+                        description
+                        available
+                        tierRestriction
+                        createdAt
+                        updatedAt
+                    }
+                }
+            }
+        """)
+
+        try:
+            async with client as session:
+                result = await session.execute(query_string, variable_values={"guestId": self.id})
+            
+            logging.info(f"Received loyalty info response: {result}")
+            
+            if result and result.get("loyaltyInfoByGuestId"):
+                data = result["loyaltyInfoByGuestId"]
+                available_rewards = []
+                if data.get("availableRewards"):
+                    for reward_data in data["availableRewards"]:
+                        available_rewards.append(
+                            RewardType(
+                                rewardId=reward_data.get("rewardId"),
+                                name=reward_data.get("name"),
+                                pointsRequired=reward_data.get("pointsRequired"),
+                                description=reward_data.get("description"),
+                                available=reward_data.get("available"),
+                                tierRestriction=reward_data.get("tierRestriction"),
+                                createdAt=reward_data.get("createdAt"),
+                                updatedAt=reward_data.get("updatedAt")
+                            )
+                        )
+                
+                return LoyaltyInfoType(
+                    loyaltyPoints=data.get("loyaltyPoints"),
+                    tier=data.get("tier"),
+                    availableRewards=available_rewards
+                )
+            else:
+                logging.warning(f"No loyalty info found for guest {self.id} or unexpected response format.")
+                return None
+        except httpx.RequestError as e:
+            logging.error(f"HTTP request to loyalty service failed for guest {self.id}: {e}")
+            return None
+        except Exception as e:
+            logging.error(f"Error fetching loyalty info for guest {self.id}: {e}")
+            return None
 
 # Convert database model to GraphQL type
 def guest_to_graphql(guest: Guest) -> GuestType:
