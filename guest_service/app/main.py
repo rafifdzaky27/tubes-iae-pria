@@ -4,7 +4,7 @@ import uvicorn
 import time
 from .db import engine, Base, get_db, wait_for_db
 from .models import Guest
-from .schema import graphql_router
+from .schema_new import graphql_router
 
 # Create FastAPI app
 app = FastAPI(title="Guest Service")

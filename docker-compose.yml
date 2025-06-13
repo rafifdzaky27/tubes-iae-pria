@@ -27,6 +27,7 @@ services:
         condition: service_healthy
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@room_db:5432/room_service
+      - REVIEW_SERVICE_URL=http://review_service:3000/graphql
     ports:
       - "8001:8000"
     networks:
@@ -101,6 +102,7 @@ services:
         condition: service_healthy
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@guest_db:5432/guest_service
+      - LOYALTY_SERVICE_URL=http://loyalty_service:3001/graphql
     ports:
       - "8003:8000"
     networks:
@@ -143,6 +145,85 @@ services:
     networks:
       - hotelease_network
     restart: on-failure
+    
+  # Hotelmate Review Service
+  review_db:
+    image: postgres:14
+    container_name: review_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: review_service
+    volumes:
+      - review_data:/var/lib/postgresql/data
+      - "../Tubes IAE FAIQAL/hotelmate-microservice/review-service/init.sql:/docker-entrypoint-initdb.d/init.sql"
+    ports:
+      - "5436:5432"
+    networks:
+      - hotelease_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      
+  review_service:
+    build: "../Tubes IAE FAIQAL/hotelmate-microservice/review-service"
+    container_name: review_service
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_HOST=review_db
+      - DB_PORT=5432
+      - DB_NAME=review_service
+      - PORT=3000
+      - GUEST_SERVICE_URL=http://guest_service:8003/graphql
+      - ROOM_SERVICE_URL=http://room_service:8001/graphql
+      - RESERVATION_SERVICE_URL=http://reservation_service:8002/graphql
+    depends_on:
+      review_db:
+        condition: service_healthy
+    networks:
+      - hotelease_network
+    restart: on-failure
+      
+  # Hotelmate Loyalty Service
+  loyalty_db:
+    image: postgres:14
+    container_name: loyalty_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: loyalty_service
+    volumes:
+      - loyalty_data:/var/lib/postgresql/data
+    ports:
+      - "5437:5432"
+    networks:
+      - hotelease_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      
+  loyalty_service:
+    build: ../Tubes\ IAE\ FAIQAL/hotelmate-microservice/loyalty-service
+    container_name: loyalty_service
+    depends_on:
+      loyalty_db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@loyalty_db:5432/loyalty_service
+      - PORT=3001
+      - GUEST_SERVICE_URL=http://guest_service:8003/graphql
+    ports:
+      - "3001:3001"
+    networks:
+      - hotelease_network
+    restart: on-failure
 
 networks:
   hotelease_network:
@@ -153,3 +234,5 @@ volumes:
   reservation_data:
   guest_data:
   billing_data:
+  review_data:
+  loyalty_data:

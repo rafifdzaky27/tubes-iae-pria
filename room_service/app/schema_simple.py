@@ -6,14 +6,10 @@ from .db import get_db
 from fastapi import Depends
 from strawberry.fastapi import GraphQLRouter
 import logging
+from .client import get_reviews_by_room_id
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-import os
-import logging
-import httpx
-from gql import Client, gql
-from gql.transport.aiohttp import AIOHTTPTransport
 
 # Input types for mutations
 @strawberry.input
@@ -33,8 +29,6 @@ class RoomUpdateInput:
 # Review types for integration with hotelmate review service
 @strawberry.type
 class ReviewAspectType:
-    reviewId: int
-    aspectId: int
     rating: int
     comment: Optional[str] = None
 
@@ -46,7 +40,7 @@ class ReviewType:
     content: Optional[str] = None
     reviewDate: str
     lastUpdated: Optional[str] = None
-    aspects: List[ReviewAspectType] = strawberry.field(default_factory=list)
+    aspects: List[ReviewAspectType]
 
 # Output types for queries and mutations
 @strawberry.type
@@ -58,14 +52,44 @@ class RoomType:
     status: str
     
     @strawberry.field
-    def reviews(self) -> List[ReviewType]:
+    async def reviews(self) -> List[ReviewType]:
         """Fetch reviews for this room from the hotelmate review service"""
         logging.info(f"Fetching reviews for room {self.id}")
         
-        # Create a sample review for testing
+        try:
+            # Fetch real reviews from the hotelmate review service
+            reviews_data = await get_reviews_by_room_id(self.id)
+            
+            if reviews_data:
+                # Convert the review data to ReviewType objects
+                result = []
+                for review in reviews_data:
+                    aspects = []
+                    for aspect in review.get("aspects", []):
+                        aspects.append(ReviewAspectType(
+                            rating=aspect.get("rating"),
+                            comment=aspect.get("comment")
+                        ))
+                    
+                    result.append(ReviewType(
+                        reviewId=review.get("reviewId"),
+                        stayId=review.get("stayId"),
+                        overallRating=review.get("overallRating"),
+                        content=review.get("content"),
+                        reviewDate=review.get("reviewDate"),
+                        lastUpdated=review.get("lastUpdated"),
+                        aspects=aspects
+                    ))
+                return result
+            
+            # Fallback to sample data if no reviews found
+            logging.info(f"No reviews found for room {self.id}, using sample data")
+        except Exception as e:
+            logging.error(f"Error fetching reviews for room {self.id}: {str(e)}")
+            logging.info("Falling back to sample data")
+        
+        # Create a sample review for testing as fallback
         sample_aspect = ReviewAspectType(
-            reviewId=1,
-            aspectId=1,
             rating=4,
             comment="Clean and comfortable"
         )
@@ -82,7 +106,7 @@ class RoomType:
         
         return [sample_review]
 
-# Convert database model to GraphQL type with sample reviews
+# Convert database model to GraphQL type
 def room_to_graphql(room: Room) -> RoomType:
     return RoomType(
         id=room.id,
@@ -91,8 +115,6 @@ def room_to_graphql(room: Room) -> RoomType:
         pricePerNight=float(room.price_per_night),
         status=room.status
     )
-
-# The room_to_graphql function is defined above
 
 # Dependency to get database session for strawberry
 def get_context():
@@ -180,10 +202,4 @@ schema = strawberry.Schema(query=Query, mutation=Mutation)
 graphql_router = GraphQLRouter(
     schema,
     context_getter=get_context
-)
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )

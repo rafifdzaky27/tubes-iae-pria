@@ -5,10 +5,6 @@ from .models import Room
 from .db import get_db
 from fastapi import Depends
 from strawberry.fastapi import GraphQLRouter
-import logging
-
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 import os
 import logging
 import httpx
@@ -46,15 +42,15 @@ class ReviewType:
     content: Optional[str] = None
     reviewDate: str
     lastUpdated: Optional[str] = None
-    aspects: List[ReviewAspectType] = strawberry.field(default_factory=list)
+    aspects: List[ReviewAspectType]
 
 # Output types for queries and mutations
 @strawberry.type
 class RoomType:
     id: int
-    roomNumber: str
-    roomType: str
-    pricePerNight: float
+    room_number: str
+    room_type: str
+    price_per_night: float
     status: str
     
     @strawberry.field
@@ -82,17 +78,15 @@ class RoomType:
         
         return [sample_review]
 
-# Convert database model to GraphQL type with sample reviews
+# Convert database model to GraphQL type
 def room_to_graphql(room: Room) -> RoomType:
     return RoomType(
         id=room.id,
-        roomNumber=room.room_number,
-        roomType=room.room_type,
-        pricePerNight=float(room.price_per_night),
+        room_number=room.room_number,
+        room_type=room.room_type,
+        price_per_night=float(room.price_per_night),
         status=room.status
     )
-
-# The room_to_graphql function is defined above
 
 # Dependency to get database session for strawberry
 def get_context():

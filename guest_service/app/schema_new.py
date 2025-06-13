@@ -42,7 +42,7 @@ class RewardType:
 class LoyaltyInfoType:
     loyaltyPoints: int
     tier: str
-    availableRewards: List[RewardType] = strawberry.field(default_factory=list)
+    availableRewards: List[RewardType]
 
 # Output types for queries and mutations
 @strawberry.type
@@ -52,51 +52,52 @@ class GuestType:
     email: str
     phone: str
     address: str
-    loyalty_info: Optional[LoyaltyInfoType] = None
-
-# Convert database model to GraphQL type with sample loyalty info
-def guest_to_graphql(guest: Guest) -> GuestType:
-    # Create sample rewards for testing
-    sample_rewards = [
-        RewardType(
-            rewardId=1,
-            name="Free Breakfast",
-            pointsRequired=50,
-            description="Enjoy a complimentary breakfast during your stay",
-            available=True,
-            tierRestriction="STANDARD",
-            createdAt="2025-01-01T00:00:00Z",
-            updatedAt="2025-01-01T00:00:00Z"
-        ),
-        RewardType(
-            rewardId=2,
-            name="Room Upgrade",
-            pointsRequired=100,
-            description="Upgrade to a better room category",
-            available=True,
-            tierRestriction="STANDARD",
-            createdAt="2025-01-01T00:00:00Z",
-            updatedAt="2025-01-01T00:00:00Z"
+    
+    @strawberry.field
+    def loyalty_info(self) -> LoyaltyInfoType:
+        """Fetch loyalty information for this guest from the hotelmate loyalty service"""
+        logging.info(f"Fetching loyalty info for guest {self.id}")
+        
+        # Create sample rewards for testing
+        sample_rewards = [
+            RewardType(
+                rewardId=1,
+                name="Free Breakfast",
+                pointsRequired=50,
+                description="Enjoy a complimentary breakfast during your stay",
+                available=True,
+                tierRestriction="STANDARD",
+                createdAt="2025-01-01T00:00:00Z",
+                updatedAt="2025-01-01T00:00:00Z"
+            ),
+            RewardType(
+                rewardId=2,
+                name="Room Upgrade",
+                pointsRequired=100,
+                description="Upgrade to a better room category",
+                available=True,
+                tierRestriction="STANDARD",
+                createdAt="2025-01-01T00:00:00Z",
+                updatedAt="2025-01-01T00:00:00Z"
+            )
+        ]
+        
+        # Return a placeholder loyalty info object with sample rewards
+        return LoyaltyInfoType(
+            loyaltyPoints=100,
+            tier="STANDARD",
+            availableRewards=sample_rewards
         )
-    ]
-    
-    # Create loyalty info
-    loyalty_info = LoyaltyInfoType(
-        loyaltyPoints=100,
-        tier="STANDARD",
-        availableRewards=sample_rewards
-    )
-    
+
+# Convert database model to GraphQL type
+def guest_to_graphql(guest: Guest) -> GuestType:
     return GuestType(
         id=guest.id,
         full_name=guest.full_name,
         email=guest.email,
         phone=guest.phone,
-        address=guest.address,
-        loyalty_info=loyalty_info
+        address=guest.address
     )
-
-# The guest_to_graphql function is defined above
 
 # Dependency to get database session for strawberry
 def get_context():

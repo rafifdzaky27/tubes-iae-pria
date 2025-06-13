@@ -5,7 +5,11 @@ import time
 from sqlalchemy import inspect
 from .db import engine, Base, get_db, wait_for_db
 from .models import Room
-from .schema import graphql_router
+from .schema_simple import graphql_router
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 # Create FastAPI app
 app = FastAPI(title="Room Management Service")
