@@ -199,6 +199,7 @@ services:
       POSTGRES_DB: loyalty_service
     volumes:
       - loyalty_data:/var/lib/postgresql/data
+      - "../Tubes IAE FAIQAL/hotelmate-microservice/loyalty-service/schema.sql:/docker-entrypoint-initdb.d/init.sql"
     ports:
       - "5437:5432"
     networks:
@@ -217,6 +218,11 @@ services:
         condition: service_healthy
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@loyalty_db:5432/loyalty_service
+      - DB_HOST=loyalty_db
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=loyalty_service
+      - DB_PORT=5432
       - PORT=3001
       - GUEST_SERVICE_URL=http://guest_service:8003/graphql
     ports:

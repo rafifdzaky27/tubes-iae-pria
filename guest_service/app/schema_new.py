@@ -215,7 +215,7 @@ class Mutation:
         return True
 
 # Create GraphQL schema
-schema = strawberry.Schema(query=Query, mutation=Mutation)
+schema = strawberry.Schema(query=Query, mutation=Mutation, types=[GuestType, LoyaltyInfoType, RewardType])
 
 # Create GraphQL router for FastAPI
 graphql_router = GraphQLRouter(
