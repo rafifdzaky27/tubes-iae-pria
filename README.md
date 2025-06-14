@@ -26,7 +26,7 @@ Additionally, the system integrates with external services from the Hotelmate gr
 
 The system uses a distributed database architecture with each service having its own PostgreSQL database. Below is the database schema diagram showing the relationships between the main entities:
 
-(![WhatsApp Image 2025-05-25 at 10 36 27_0c2e](https://github.com/user-attachments/assets/590363be-9157-4c73-9cd7-31d98150f221)
+![WhatsApp Image 2025-05-25 at 10 36 27_0c2e](https://github.com/user-attachments/assets/590363be-9157-4c73-9cd7-31d98150f221)
 
 #### Key Relationships:
 - Rooms have a one-to-many relationship with Reservations
