@@ -8,7 +8,7 @@ HotelEase consists of four core microservices, each handling a specific domain o
 
 1. **Room Management Service**: Manages hotel room data (number, type, price, status)
 2. **Reservation Service**: Handles room reservations, check-in/out dates, and status
-3. **Guest Service**: Manages guest data, profiles, contact information, and stay history
+3. **Guest Service**: Manages guest data, profiles, contact information.
 4. **Billing Service**: Calculates bills based on reservations and length of stay
 
 ## System Architecture
