@@ -1,4 +1,4 @@
-![WhatsApp Image 2025-05-25 at 10 36 27_0c2e4fca](https://github.com/user-attachments/assets/5c9e64c0-1624-44bb-8732-2320fa8b1b1f)![WhatsApp Image 2025-05-25 at 10 36 27_0c2e4fca](https://github.com/user-attachments/assets/35605e5f-9662-4a87-a2d5-1d99a850940c)# HotelEase - Microservices Backend System
+# HotelEase - Microservices Backend System
 
 A comprehensive microservices-based backend system for hotel operations built with Python, GraphQL, Docker, and PostgreSQL. This system provides a complete solution for hotel management, including room management, reservation handling, guest information management, and billing.
 
@@ -26,8 +26,7 @@ Additionally, the system integrates with external services from the Hotelmate gr
 
 The system uses a distributed database architecture with each service having its own PostgreSQL database. Below is the database schema diagram showing the relationships between the main entities:
 
-![Database Schema](![WhatsApp Image 2025-05-25 at 10 36 27_0c2e4fca](https://github.com/user-attachments/assets/590363be-9157-4c73-9cd7-31d98150f221)
-)
+(![WhatsApp Image 2025-05-25 at 10 36 27_0c2e](https://github.com/user-attachments/assets/590363be-9157-4c73-9cd7-31d98150f221)
 
 #### Key Relationships:
 - Rooms have a one-to-many relationship with Reservations
